@@ -18,7 +18,7 @@ fi
 DIRDIR=$(pwd)
 LOCAL_IP=$(ip a | grep inet | grep "eth0\|en" | awk '{print $2}' | tr '/' ' ' | awk '{print $1}')
 INFREF=https://n5amd.com/digital-radio-how-tos/create-xlx-xrf-d-star-reflector/
-XLXDREPO=https://github.com/LX3JL/xlxd.git
+XLXDREPO=https://github.com/erstec/xlxd.git
 DMRIDURL=http://xlxapi.rlx.lu/api/exportdmr.php
 WEBDIR=/var/www/xlxd
 XLXINSTDIR=/root/reflector-install-files/xlxd
@@ -48,6 +48,8 @@ echo "--------------------------------------------------------------------------
 mkdir -p $XLXINSTDIR
 mkdir -p $WEBDIR
 apt-get update
+# Hardcoded to Ubuntu 20
+VERSION=11
 if [ $VERSION = 9 ]
 then
     apt-get -y install $DEP
@@ -58,6 +60,10 @@ then
 elif [ $VERSION = 11 ]
 then
     apt-get -y install $DEP3
+else
+    echo ""
+    echo "This script is only tested in Debian 9/10/11 and x64 cpu Arch. "
+    exit 0
 fi
 
 echo "------------------------------------------------------------------------------"
@@ -71,6 +77,10 @@ else
    echo "------------------------------------------------------------------------------"
    cd $XLXINSTDIR
    git clone $XLXDREPO
+   cd xlxd
+   git checkout -b dark-mode
+   git branch --set-upstream-to=origin/dark-mode dark-mode
+   git pull
    cd $XLXINSTDIR/xlxd/src
    make clean
    make
@@ -90,6 +100,7 @@ else
    echo ""
    exit 0
 fi
+
 echo "------------------------------------------------------------------------------"
 echo "Getting the DMRID.dat file... "
 echo "------------------------------------------------------------------------------"
@@ -97,26 +108,30 @@ wget -O /xlxd/dmrid.dat $DMRIDURL
 echo "------------------------------------------------------------------------------"
 echo "Copying web dashboard files and updating init script... "
 cp -R $XLXINSTDIR/xlxd/dashboard/* /var/www/xlxd/
+mkdir -p /var/www/newxlxd
+cp -R $XLXINSTDIR/xlxd/dashboard2/* /var/www/newxlxd/
 cp $XLXINSTDIR/xlxd/scripts/xlxd /etc/init.d/xlxd
 sed -i "s/XLX999 192.168.1.240 127.0.0.1/$XRFNUM $LOCAL_IP 127.0.0.1/g" /etc/init.d/xlxd
 update-rc.d xlxd defaults
 # Delaying startup time
 # mv /etc/rc3.d/S01xlxd /etc/rc3.d/S10xlxd ##Disabling as its not really needed. 
-echo "Updating XLXD Config file... "
-XLXCONFIG=/var/www/xlxd/pgs/config.inc.php
-sed -i "s/your_email/$EMAIL/g" $XLXCONFIG
-sed -i "s/LX1IQ/$CALLSIGN/g" $XLXCONFIG
-sed -i "s/http:\/\/your_dashboard/http:\/\/$XLXDOMAIN/g" $XLXCONFIG
-sed -i "s/\/tmp\/callinghome.php/\/xlxd\/callinghome.php/g" $XLXCONFIG
-echo "Copying directives and reloading apache... "
-cp $DIRDIR/templates/apache.tbd.conf /etc/apache2/sites-available/$XLXDOMAIN.conf
-sed -i "s/apache.tbd/$XLXDOMAIN/g" /etc/apache2/sites-available/$XLXDOMAIN.conf
-sed -i "s/ysf-xlxd/xlxd/g" /etc/apache2/sites-available/$XLXDOMAIN.conf
+# echo "Updating XLXD Config file... "
+# XLXCONFIG=/var/www/xlxd/pgs/config.inc.php
+# sed -i "s/your_email/$EMAIL/g" $XLXCONFIG
+# sed -i "s/LX1IQ/$CALLSIGN/g" $XLXCONFIG
+# sed -i "s/http:\/\/your_dashboard/http:\/\/$XLXDOMAIN/g" $XLXCONFIG
+# sed -i "s/\/tmp\/callinghome.php/\/xlxd\/callinghome.php/g" $XLXCONFIG
+# echo "Copying directives and reloading apache... "
+echo "Set WWW folder permissions... "
+# cp $DIRDIR/templates/apache.tbd.conf /etc/apache2/sites-available/$XLXDOMAIN.conf
+# sed -i "s/apache.tbd/$XLXDOMAIN/g" /etc/apache2/sites-available/$XLXDOMAIN.conf
+# sed -i "s/ysf-xlxd/xlxd/g" /etc/apache2/sites-available/$XLXDOMAIN.conf
 chown -R www-data:www-data /var/www/xlxd/
+chown -R www-data:www-data /var/www/newxlxd/
 chown -R www-data:www-data /xlxd/
-a2ensite $XLXDOMAIN
+# a2ensite $XLXDOMAIN
 service xlxd start
-systemctl restart apache2
+# systemctl restart apache2
 echo "------------------------------------------------------------------------------"
 echo ""
 echo ""
