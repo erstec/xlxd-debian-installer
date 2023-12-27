@@ -26,10 +26,15 @@ XLXINSTDIR=/root/reflector-install-files/xlxd
 DEP="git build-essential apache2 php libapache2-mod-php php7.0-mbstring"
 DEP2="git build-essential apache2 php libapache2-mod-php php7.3-mbstring"
 DEP3="git build-essential apache2 php libapache2-mod-php php7.4-mbstring"
-DEP4="git build-essential apache2 php libapache2-mod-php php8.1-mbstring"
+DEP4="git build-essential apache2 php libapache2-mod-php php8.2-mbstring"
 VERSION=$(sed 's/\..*//' /etc/debian_version)
-# clear
+
 echo ""
+echo "XLX uses 3 digit numbers for its reflectors. For example: 032, 999, 099."
+read -p "What 3 digit XRF number will you be using?  " XRFDIGIT
+XRFNUM=XLX$XRFDIGIT
+echo ""
+# echo "--------------------------------------"
 # read -p "What is the FQDN of the XLX Reflector dashboard? Example: xlx.domain.com.  " XLXDOMAIN
 # echo ""
 # echo "--------------------------------------"
@@ -38,7 +43,7 @@ echo ""
 # echo "--------------------------------------"
 # read -p "What is the admins callsign?  " CALLSIGN
 # echo ""
-# echo "--------------------------------------"
+echo "--------------------------------------"
 read -p "What is the IP address of AMBE server?  " AMBEIP
 echo ""
 echo "--------------------------------------"
@@ -157,6 +162,9 @@ chown -R www-data:www-data /xlxd/
 
 echo "Starting XLXD... "
 service xlxd start
+
+echo "Stopping XLXD... "
+service xlxd stop
 
 # systemctl restart apache2
 
